@@ -1,8 +1,12 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL = "http://localhost:8000";
 
 /* ================= GET PROJECTS ================= */
-export const getProjects = async () => {
-  const response = await fetch(`${API_BASE_URL}/api/v1/projects`, {
+export const getProjects = async (search?: string) => {
+  const url = search
+    ? `${API_BASE_URL}/api/v1/projects?search=${encodeURIComponent(search)}`
+    : `${API_BASE_URL}/api/v1/projects`;
+
+  const response = await fetch(url, {
     method: "GET",
     credentials: "include",
   });
@@ -79,6 +83,51 @@ export const updateProject = async (
 
   if (!response.ok) {
     throw new Error(result.message || "Failed to update project");
+  }
+
+  return result.data;
+};
+
+/* ================= GET MY ROLE ================= */
+export const getMyProjectRole = async (projectId: string) => {
+  const response = await fetch(
+    `${API_BASE_URL}/api/v1/projects/${projectId}/role`,
+    {
+      method: "GET",
+      credentials: "include",
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || "Failed to fetch role");
+  }
+
+  return result.data; // { role: string }
+};
+
+/* ================= ADD MEMBER ================= */
+export const addMember = async (
+  projectId: string,
+  data: { email: string; role: "member" | "project_admin" | "admin" }
+) => {
+  const response = await fetch(
+    `${API_BASE_URL}/api/v1/projects/${projectId}/members`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || "Failed to add member");
   }
 
   return result.data;

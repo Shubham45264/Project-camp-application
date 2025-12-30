@@ -1,29 +1,29 @@
-import {body} from "express-validator";
+import { body } from "express-validator";
 import { AvailableUserRole } from "../utils/constants.js";
 
-const userRegisterValidator = () =>{
+const userRegisterValidator = () => {
   return [
     body("email")
-    .trim()
-    .notEmpty()
-    .withMessage("Email is required")
-    .isEmail()
-    .withMessage("Email is not valid"),
+      .trim()
+      .notEmpty()
+      .withMessage("Email is required")
+      .isEmail()
+      .withMessage("Email is not valid"),
     body("username")
-    .trim()
-    .notEmpty()
-    .withMessage("Username is required")
-    .isLowercase("Username must be in lowercase")
-    .isLength({min:3})
-    .withMessage("username must be at least 3 characters long"),
+      .trim()
+      .notEmpty()
+      .withMessage("Username is required")
+      .isLowercase("Username must be in lowercase")
+      .isLength({ min: 3 })
+      .withMessage("username must be at least 3 characters long"),
     body("password")
-    .trim()
-    .notEmpty()
-    .withMessage("Password is required"),
+      .trim()
+      .notEmpty()
+      .withMessage("Password is required"),
     body("fullname")
-    .optional()
-    .trim(),
-    
+      .optional()
+      .trim(),
+
   ];
 };
 
@@ -91,10 +91,20 @@ const addMembertoProjectValidator = () => {
 };
 
 
-export{
-  userRegisterValidator,userLoginValidator,userChangeCurrentPasswordValidator,
+const createTaskValidator = () => {
+  return [
+    body("title").trim().notEmpty().withMessage("Task title is required"),
+    body("description").optional(),
+    body("status").optional(),
+    body("assignedTo").optional(),
+  ];
+};
+
+export {
+  userRegisterValidator, userLoginValidator, userChangeCurrentPasswordValidator,
   userForgotPasswordValidator,
   userResetForgotPasswordValidator,
   createProjectValidator,
-  addMembertoProjectValidator
+  addMembertoProjectValidator,
+  createTaskValidator
 }

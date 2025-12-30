@@ -74,3 +74,78 @@ export const validateProjectPermission = (roles = []) => {
     next();
   });
 };
+
+/* ================= TASK PERMISSION ================= */
+export const validateTaskPermission = (roles = []) => {
+  return asyncHandler(async (req, _res, next) => {
+    const { taskId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(taskId)) {
+      throw new ApiError(400, "Invalid task ID");
+    }
+
+    // Dynamic import to avoid circular dependency if models import this file
+    const { Task } = await import("../models/task.models.js");
+
+    const task = await Task.findById(taskId);
+    if (!task) {
+      throw new ApiError(404, "Task not found");
+    }
+
+    const membership = await ProjectMember.findOne({
+      project: task.project,
+      user: req.user._id,
+    });
+
+    if (!membership) {
+      throw new ApiError(403, "User is not a project member");
+    }
+
+    if (roles.length && !roles.includes(membership.role)) {
+      throw new ApiError(403, "Permission denied");
+    }
+
+    req.projectMember = membership;
+    next();
+  });
+};
+
+/* ================= SUBTASK PERMISSION ================= */
+export const validateSubtaskPermission = (roles = []) => {
+  return asyncHandler(async (req, _res, next) => {
+    const { subtaskId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(subtaskId)) {
+      throw new ApiError(400, "Invalid subtask ID");
+    }
+
+    const { Subtask } = await import("../models/subtask.models.js");
+    const { Task } = await import("../models/task.models.js");
+
+    const subtask = await Subtask.findById(subtaskId);
+    if (!subtask) {
+      throw new ApiError(404, "Subtask not found");
+    }
+
+    const task = await Task.findById(subtask.task);
+    if (!task) {
+      throw new ApiError(404, "Parent task not found");
+    }
+
+    const membership = await ProjectMember.findOne({
+      project: task.project,
+      user: req.user._id,
+    });
+
+    if (!membership) {
+      throw new ApiError(403, "User is not a project member");
+    }
+
+    if (roles.length && !roles.includes(membership.role)) {
+      throw new ApiError(403, "Permission denied");
+    }
+
+    req.projectMember = membership;
+    next();
+  });
+};

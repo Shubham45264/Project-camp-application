@@ -23,23 +23,16 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [taskStats, setTaskStats] = useState<Record<string, TaskStats>>({});
+  const [projects, setProjects] = useState<any[]>([]); // { project, role, stats }
   const [loading, setLoading] = useState(true);
-
-  // Only used for UPDATE button
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
-    null
-  );
+  const [search, setSearch] = useState("");
 
   /* -------- LOAD PROJECTS -------- */
-  const loadProjects = useCallback(async () => {
+  const loadProjects = useCallback(async (query = "") => {
     try {
       setLoading(true);
-      const data = await getProjects();
-      // Extract the project object from each item since backend returns { project: {...}, role: "..." }
-      const projectsData = data.map((item: any) => item.project || item);
-      setProjects(projectsData);
+      const data = await getProjects(query);
+      setProjects(data); // Backend now returns stats inside each item
     } catch (error: any) {
       alert(error.message || "Failed to load projects");
     } finally {
@@ -47,55 +40,24 @@ const Dashboard = () => {
     }
   }, []);
 
+  // Initial Load + Search Debounce
   useEffect(() => {
-    loadProjects();
-  }, [loadProjects]);
+    const timer = setTimeout(() => {
+      loadProjects(search);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search, loadProjects]);
 
-  // Refetch when returning from create/edit with state.refresh
+  // Refetch when returning from create/edit
   useEffect(() => {
     if (location.state?.refresh) {
-      loadProjects();
+      loadProjects(search);
     }
-  }, [location, loadProjects]);
-
-  /* -------- LOAD TASK STATS -------- */
-  useEffect(() => {
-    if (!projects.length) return;
-
-    const loadTaskStats = async () => {
-      const statsMap: Record<string, TaskStats> = {};
-
-      await Promise.all(
-        projects.map(async (project) => {
-          try {
-            const tasks: Task[] = await getTasksByProject(project._id);
-
-            statsMap[project._id] = {
-              todo: tasks.filter((t) => t.status === "TODO").length,
-              inProgress: tasks.filter(
-                (t) => t.status === "IN_PROGRESS"
-              ).length,
-              done: tasks.filter((t) => t.status === "DONE").length,
-            };
-          } catch {
-            statsMap[project._id] = {
-              todo: 0,
-              inProgress: 0,
-              done: 0,
-            };
-          }
-        })
-      );
-
-      setTaskStats(statsMap);
-    };
-
-    loadTaskStats();
-  }, [projects]);
+  }, [location, loadProjects, search]);
 
   /* -------- LOGOUT -------- */
   const handleLogout = async () => {
-    await fetch(`${import.meta.env.VITE_API_URL}/api/v1/auth/logout`, {
+    await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/api/v1/auth/logout`, {
       method: "POST",
       credentials: "include",
     });
@@ -132,13 +94,17 @@ const Dashboard = () => {
           <h1 className="text-xl font-semibold">Projects</h1>
 
           <div className="flex gap-3">
-            <Input placeholder="Search projects..." className="w-64" />
+            <Input
+              placeholder="Search projects by name..."
+              className="w-64"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
 
-            <Button 
+            <Button
               variant="outline"
               onClick={() => {
-                setLoading(true);
-                loadProjects();
+                loadProjects(search);
               }}
             >
               Refresh
@@ -149,18 +115,6 @@ const Dashboard = () => {
                 <Plus className="w-4 h-4 mr-2" />
                 New Project
               </Link>
-            </Button>
-
-            <Button
-              variant="secondary"
-              disabled={!selectedProjectId}
-              onClick={() =>
-                selectedProjectId &&
-                navigate(`/projects/${selectedProjectId}/edit`)
-              }
-            >
-              <Pencil className="w-4 h-4 mr-2" />
-              Update
             </Button>
           </div>
         </header>
@@ -173,21 +127,33 @@ const Dashboard = () => {
             <p className="text-muted-foreground">No projects found</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {projects.map((project) => (
-                <div
-                  key={project._id}
-                  onClick={() => setSelectedProjectId(project._id)}
-                >
-                  <ProjectCard
-                    project={project}
-                    stats={
-                      taskStats[project._id] ?? {
-                        todo: 0,
-                        inProgress: 0,
-                        done: 0,
-                      }
-                    }
-                  />
+              {projects.map((item) => (
+                <div key={item.project._id} className="relative group">
+                  <div
+                    onClick={() => navigate(`/project/${item.project._id}`)}
+                    className="cursor-pointer transition-transform hover:scale-[1.02]"
+                  >
+                    <ProjectCard
+                      project={item.project}
+                      stats={item.stats || { todo: 0, inProgress: 0, done: 0 }}
+                    />
+                    <div className="text-xs text-muted-foreground mt-1 text-center">
+                      Progress: {item.stats?.progress || 0}%
+                    </div>
+                  </div>
+
+                  {/* Edit Button - Visible on Hover or always visible */}
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/projects/${item.project._id}/edit`);
+                    }}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
                 </div>
               ))}
             </div>

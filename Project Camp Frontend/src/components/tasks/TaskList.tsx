@@ -7,24 +7,28 @@ interface TaskListProps {
     id: string,
     status: Task["status"]
   ) => void;
+  onTaskClick?: (id: string) => void;
+  userRole?: string | null;
 }
 
 const STATUSES: Task["status"][] = [
-  "TODO",
-  "IN_PROGRESS",
-  "DONE",
+  "todo",
+  "in_progress",
+  "done",
 ];
 
 const TaskList = ({
   tasks,
   onDelete,
   onStatusChange,
+  onTaskClick,
+  userRole,
 }: TaskListProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {STATUSES.map((status) => (
         <div key={status}>
-          <h3 className="font-semibold mb-3">{status}</h3>
+          <h3 className="font-semibold mb-3">{status.toUpperCase().replace('_', ' ')}</h3>
 
           <div className="space-y-3">
             {tasks
@@ -35,6 +39,8 @@ const TaskList = ({
                   task={task}
                   onDelete={onDelete}
                   onStatusChange={onStatusChange}
+                  onClick={onTaskClick}
+                  userRole={userRole}
                 />
               ))}
           </div>

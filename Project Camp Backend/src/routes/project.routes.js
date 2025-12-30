@@ -9,6 +9,7 @@ import {
   updateProject,
   deleteProject,
   updateMemberRole,
+  getMyProjectRole,
 } from "../controllers/project.controllers.js";
 
 import { validate } from "../middlewares/validator.middleware.js";
@@ -39,6 +40,9 @@ router
     validate,
     createProject
   );
+
+// Check Role
+router.route("/:projectId/role").get(getMyProjectRole);
 
 router
   .route("/:projectId")

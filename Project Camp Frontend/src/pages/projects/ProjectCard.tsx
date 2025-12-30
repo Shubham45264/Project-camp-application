@@ -30,6 +30,7 @@ export interface TaskStats {
   todo: number;
   inProgress: number;
   done: number;
+  progress?: number;
 }
 
 interface Props {
@@ -68,7 +69,13 @@ const ProjectCard = ({ project, stats }: Props) => {
   };
 
   const totalTasks = (stats?.todo || 0) + (stats?.inProgress || 0) + (stats?.done || 0);
-  const completionPercent = totalTasks > 0 ? Math.round(((stats?.done || 0) / totalTasks) * 100) : 0;
+
+  // Use backend provided progress, or calculate weighted average (In Progress = 50%, Done = 100%)
+  const completionPercent = stats?.progress ?? (
+    totalTasks > 0
+      ? Math.round((((stats?.done || 0) * 1 + (stats?.inProgress || 0) * 0.5) / totalTasks) * 100)
+      : 0
+  );
 
   return (
     <>
@@ -167,123 +174,123 @@ const ProjectCard = ({ project, stats }: Props) => {
             </div>
           ) : (
             <div className="space-y-6">
-            {/* Description */}
-            <div>
-              <h4 className="text-sm font-semibold mb-2">Description</h4>
-              <p className="text-sm text-muted-foreground">
-                {projectDetails?.description || project.description || "No description provided"}
-              </p>
-            </div>
-
-            {/* Project Stats */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-background/50 rounded-lg p-4 border border-border/30">
-                <div className="flex items-center gap-2 mb-2">
-                  <BarChart3 className="w-4 h-4 text-primary" />
-                  <h4 className="text-sm font-semibold">Tasks</h4>
-                </div>
-                <div className="text-2xl font-bold text-primary">
-                  {totalTasks}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {stats?.done || 0} completed
+              {/* Description */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2">Description</h4>
+                <p className="text-sm text-muted-foreground">
+                  {projectDetails?.description || project.description || "No description provided"}
                 </p>
               </div>
 
-              <div className="bg-background/50 rounded-lg p-4 border border-border/30">
-                <div className="flex items-center gap-2 mb-2">
-                  <Users className="w-4 h-4 text-primary" />
-                  <h4 className="text-sm font-semibold">Members</h4>
-                </div>
-                <div className="text-2xl font-bold text-primary">
-                  {project.members || 1}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  team members
-                </p>
-              </div>
-            </div>
-
-            {/* Task Breakdown */}
-            <div>
-              <h4 className="text-sm font-semibold mb-3">Task Status</h4>
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-20 h-8 bg-yellow-600/30 border border-yellow-500/50 rounded flex items-center justify-center">
-                    <span className="text-xs font-bold text-yellow-400">
-                      TODO
-                    </span>
+              {/* Project Stats */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-background/50 rounded-lg p-4 border border-border/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BarChart3 className="w-4 h-4 text-primary" />
+                    <h4 className="text-sm font-semibold">Tasks</h4>
                   </div>
-                  <div className="flex-1 h-2 bg-background/50 rounded-full overflow-hidden border border-border/30">
-                    <div
-                      className="h-full bg-yellow-500"
-                      style={{
-                        width: `${totalTasks > 0 ? (stats?.todo || 0) / totalTasks * 100 : 0}%`,
-                      }}
-                    />
+                  <div className="text-2xl font-bold text-primary">
+                    {totalTasks}
                   </div>
-                  <span className="text-sm font-semibold w-8">
-                    {stats?.todo || 0}
-                  </span>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {stats?.done || 0} completed
+                  </p>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="w-20 h-8 bg-blue-600/30 border border-blue-500/50 rounded flex items-center justify-center">
-                    <span className="text-xs font-bold text-blue-400">
-                      IN PROGRESS
-                    </span>
+                <div className="bg-background/50 rounded-lg p-4 border border-border/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="w-4 h-4 text-primary" />
+                    <h4 className="text-sm font-semibold">Members</h4>
                   </div>
-                  <div className="flex-1 h-2 bg-background/50 rounded-full overflow-hidden border border-border/30">
-                    <div
-                      className="h-full bg-blue-500"
-                      style={{
-                        width: `${totalTasks > 0 ? (stats?.inProgress || 0) / totalTasks * 100 : 0}%`,
-                      }}
-                    />
+                  <div className="text-2xl font-bold text-primary">
+                    {project.members || 1}
                   </div>
-                  <span className="text-sm font-semibold w-8">
-                    {stats?.inProgress || 0}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="w-20 h-8 bg-green-600/30 border border-green-500/50 rounded flex items-center justify-center">
-                    <span className="text-xs font-bold text-green-400">
-                      DONE
-                    </span>
-                  </div>
-                  <div className="flex-1 h-2 bg-background/50 rounded-full overflow-hidden border border-border/30">
-                    <div
-                      className="h-full bg-green-500"
-                      style={{
-                        width: `${totalTasks > 0 ? (stats?.done || 0) / totalTasks * 100 : 0}%`,
-                      }}
-                    />
-                  </div>
-                  <span className="text-sm font-semibold w-8">
-                    {stats?.done || 0}
-                  </span>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    team members
+                  </p>
                 </div>
               </div>
-            </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-3 pt-4">
-              <Button
-                onClick={handleNavigateToProject}
-                className="flex-1"
-              >
-                Open Project
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setModalOpen(false)}
-                className="flex-1"
-              >
-                Close
-              </Button>
-            </div>
-          </div>          )}        </DialogContent>
+              {/* Task Breakdown */}
+              <div>
+                <h4 className="text-sm font-semibold mb-3">Task Status</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-20 h-8 bg-yellow-600/30 border border-yellow-500/50 rounded flex items-center justify-center">
+                      <span className="text-xs font-bold text-yellow-400">
+                        TODO
+                      </span>
+                    </div>
+                    <div className="flex-1 h-2 bg-background/50 rounded-full overflow-hidden border border-border/30">
+                      <div
+                        className="h-full bg-yellow-500"
+                        style={{
+                          width: `${totalTasks > 0 ? (stats?.todo || 0) / totalTasks * 100 : 0}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-sm font-semibold w-8">
+                      {stats?.todo || 0}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="w-20 h-8 bg-blue-600/30 border border-blue-500/50 rounded flex items-center justify-center">
+                      <span className="text-xs font-bold text-blue-400">
+                        IN PROGRESS
+                      </span>
+                    </div>
+                    <div className="flex-1 h-2 bg-background/50 rounded-full overflow-hidden border border-border/30">
+                      <div
+                        className="h-full bg-blue-500"
+                        style={{
+                          width: `${totalTasks > 0 ? (stats?.inProgress || 0) / totalTasks * 100 : 0}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-sm font-semibold w-8">
+                      {stats?.inProgress || 0}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="w-20 h-8 bg-green-600/30 border border-green-500/50 rounded flex items-center justify-center">
+                      <span className="text-xs font-bold text-green-400">
+                        DONE
+                      </span>
+                    </div>
+                    <div className="flex-1 h-2 bg-background/50 rounded-full overflow-hidden border border-border/30">
+                      <div
+                        className="h-full bg-green-500"
+                        style={{
+                          width: `${totalTasks > 0 ? (stats?.done || 0) / totalTasks * 100 : 0}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-sm font-semibold w-8">
+                      {stats?.done || 0}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <Button
+                  onClick={handleNavigateToProject}
+                  className="flex-1"
+                >
+                  Open Project
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setModalOpen(false)}
+                  className="flex-1"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>)}        </DialogContent>
       </Dialog>
     </>
   );

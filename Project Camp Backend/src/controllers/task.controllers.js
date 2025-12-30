@@ -25,6 +25,13 @@ const getTasks = asyncHandler(async (req, res) => {
 const createTask = asyncHandler(async (req, res) => {
   const { title, description, assignedTo, status } = req.body;
   const { projectId } = req.params;
+  console.log("Creating task for project:", projectId);
+  console.log("Body:", req.body);
+
+  if (!title) {
+    throw new ApiError(400, "Task title is required");
+  }
+
   const project = await Project.findById(projectId);
 
   if (!project) {
@@ -193,6 +200,12 @@ const deleteTask = asyncHandler(async (req, res) => {
 const createSubTask = asyncHandler(async (req, res) => {
   const { taskId } = req.params;
   const { title } = req.body;
+  console.log("Creating subtask for task:", taskId);
+  console.log("Body:", req.body);
+
+  if (!title) {
+    throw new ApiError(400, "Subtask title is required");
+  }
 
   const task = await Task.findById(taskId);
   if (!task) {

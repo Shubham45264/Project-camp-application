@@ -284,7 +284,7 @@ const forgotPasswordRequest = asyncHandler(async (req, res) => {
 
   await user.save({ validateBeforeSave: false });
 
-  await sendEmail({
+  const emailResponse = await sendEmail({
     email: user.email,
     subject: "Password reset request",
     mailgenContent: ForgotPasswordMailgenContent(
@@ -296,7 +296,7 @@ const forgotPasswordRequest = asyncHandler(async (req, res) => {
   return res.status(200).json(
     new ApiResponse(
       200,
-      {},
+      (emailResponse && emailResponse.mockLink) ? { mockLink: emailResponse.mockLink } : {},
       "Password reset request sent successfully"
     )
   );

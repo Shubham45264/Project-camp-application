@@ -15,7 +15,8 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import ProjectDetail from "./pages/ProjectDetail";
 import NotFound from "./pages/NotFound";
-import ForgotPassword from "./components/landing/forget";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 // Landing
 import { Features } from "./components/landing/Features";
@@ -44,6 +45,10 @@ const App = () => (
           <Route path="/paths" element={<><Navbar /><Paths /></>} />
           <Route path="/quote" element={<><Navbar /><Quote /></>} />
           <Route path="/pricing" element={<><Navbar /><Pricing /></>} />
+
+          {/* Auth */}
+          <Route path="/forgot-password" element={<><Navbar /><ForgotPassword /></>} />
+          <Route path="/reset-password/:token" element={<><Navbar /><ResetPassword /></>} />
 
           {/* App */}
           <Route path="/dashboard" element={<Dashboard />} />

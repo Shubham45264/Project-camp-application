@@ -1,9 +1,11 @@
 import { Trash2 } from "lucide-react";
 
+import { RoleGuard } from "@/components/common/RoleGuard";
+
 export interface Task {
   _id: string;
   title: string;
-  status: "TODO" | "IN_PROGRESS" | "DONE";
+  status: "todo" | "in_progress" | "done";
 }
 
 interface TaskItemProps {
@@ -13,16 +15,25 @@ interface TaskItemProps {
     id: string,
     status: Task["status"]
   ) => void;
+  onClick?: (id: string) => void;
+  userRole?: string | null;
 }
 
 const TaskItem = ({
   task,
   onDelete,
   onStatusChange,
+  onClick,
+  userRole,
 }: TaskItemProps) => {
   return (
     <div className="flex items-center justify-between border rounded p-3">
-      <span>{task.title}</span>
+      <span
+        onClick={() => onClick && onClick(task._id)}
+        className="font-medium cursor-pointer hover:underline decoration-dashed"
+      >
+        {task.title}
+      </span>
 
       <div className="flex gap-2 items-center">
         <select
@@ -33,19 +44,24 @@ const TaskItem = ({
               e.target.value as Task["status"]
             )
           }
-          className="border rounded px-2 py-1 text-sm"
+          className="border rounded px-2 py-1 text-sm bg-background"
         >
-          <option value="TODO">Todo</option>
-          <option value="IN_PROGRESS">In Progress</option>
-          <option value="DONE">Done</option>
+          <option value="todo">Todo</option>
+          <option value="in_progress">In Progress</option>
+          <option value="done">Done</option>
         </select>
 
-        <button
-          onClick={() => onDelete(task._id)}
-          className="text-red-500 hover:text-red-600"
+        <RoleGuard
+          currentRole={userRole || null}
+          allowedRoles={["admin", "project_admin"]}
         >
-          <Trash2 className="w-4 h-4" />
-        </button>
+          <button
+            onClick={() => onDelete(task._id)}
+            className="text-red-500 hover:text-red-600"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </RoleGuard>
       </div>
     </div>
   );

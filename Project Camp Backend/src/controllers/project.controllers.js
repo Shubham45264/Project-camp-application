@@ -8,6 +8,8 @@ import mongoose from "mongoose";
 import { AvailableUserRole, UserRolesEnum } from "../utils/constants.js";
 
 const getProjects = asyncHandler(async (req, res) => {
+  const { search } = req.query;
+
   const projects = await ProjectMember.aggregate([
     {
       $match: {
@@ -42,6 +44,83 @@ const getProjects = asyncHandler(async (req, res) => {
     {
       $unwind: "$project",
     },
+    // Search Filter
+    ...(search
+      ? [
+        {
+          $match: {
+            "project.name": { $regex: search, $options: "i" },
+          },
+        },
+      ]
+      : []),
+    // Lookup Tasks for Stats
+    {
+      $lookup: {
+        from: "tasks",
+        localField: "project._id",
+        foreignField: "project",
+        as: "tasks",
+      },
+    },
+    {
+      $addFields: {
+        totalTasks: { $size: "$tasks" },
+        todoTasks: {
+          $size: {
+            $filter: {
+              input: "$tasks",
+              as: "task",
+              cond: { $eq: ["$$task.status", "todo"] },
+            },
+          },
+        },
+        inProgressTasks: {
+          $size: {
+            $filter: {
+              input: "$tasks",
+              as: "task",
+              cond: { $eq: ["$$task.status", "in_progress"] },
+            },
+          },
+        },
+        doneTasks: {
+          $size: {
+            $filter: {
+              input: "$tasks",
+              as: "task",
+              cond: { $eq: ["$$task.status", "done"] },
+            },
+          },
+        },
+      },
+    },
+    {
+      $addFields: {
+        progress: {
+          $cond: {
+            if: { $eq: ["$totalTasks", 0] },
+            then: 0,
+            else: {
+              $multiply: [
+                {
+                  $divide: [
+                    {
+                      $add: [
+                        { $multiply: ["$inProgressTasks", 0.5] },
+                        { $multiply: ["$doneTasks", 1] },
+                      ],
+                    },
+                    "$totalTasks",
+                  ],
+                },
+                100,
+              ],
+            },
+          },
+        },
+      },
+    },
     {
       $project: {
         project: {
@@ -53,6 +132,13 @@ const getProjects = asyncHandler(async (req, res) => {
           createdBy: 1,
         },
         role: 1,
+        stats: {
+          todo: "$todoTasks",
+          inProgress: "$inProgressTasks",
+          done: "$doneTasks",
+          total: "$totalTasks",
+          progress: { $round: ["$progress", 0] },
+        },
         _id: 0,
       },
     },
@@ -135,7 +221,7 @@ const addMembersToProject = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email });
 
   if (!user) {
-    throw new ApiError(404, "User does not exists");
+    throw new ApiError(404, "User does not exist");
   }
 
   await ProjectMember.findOneAndUpdate(
@@ -285,6 +371,23 @@ const deleteMember = asyncHandler(async (req, res) => {
     );
 });
 
+const getMyProjectRole = asyncHandler(async (req, res) => {
+  const { projectId } = req.params;
+
+  const projectMember = await ProjectMember.findOne({
+    project: new mongoose.Types.ObjectId(projectId),
+    user: new mongoose.Types.ObjectId(req.user._id),
+  });
+
+  if (!projectMember) {
+    throw new ApiError(403, "Not a member of this project");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { role: projectMember.role }, "Role fetched"));
+});
+
 export {
   addMembersToProject,
   createProject,
@@ -295,4 +398,5 @@ export {
   updateProject,
   deleteProject,
   updateMemberRole,
+  getMyProjectRole,
 };
