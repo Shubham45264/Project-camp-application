@@ -79,7 +79,7 @@ npm install
 ## 👥 Contributors
 
 *   **Shubham Jamdar** - *Initial Work*
-*   **Nitanshu42**
+*   **Nitanshu Tiwari**
 
 ## 📄 License
 
