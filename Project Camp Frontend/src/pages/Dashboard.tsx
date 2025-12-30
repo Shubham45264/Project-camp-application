@@ -3,6 +3,7 @@ import { Plus, LogOut, Tent, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNavigate, useLocation, Link } from "react-router-dom";
+import { toast } from "sonner";
 
 import { getProjects } from "@/services/project.api";
 import { getTasksByProject } from "@/services/task.api";
@@ -57,12 +58,25 @@ const Dashboard = () => {
 
   /* -------- LOGOUT -------- */
   const handleLogout = async () => {
-    await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/api/v1/auth/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
-    localStorage.removeItem("user");
-    window.location.href = "/login";
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/api/v1/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      localStorage.removeItem("user");
+
+      toast.success("Signed out successfully", {
+        description: `See you soon, ${user.fullName || user.username || "Friend"}!`,
+        duration: 4000,
+      });
+
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed", error);
+      navigate("/login");
+    }
   };
 
   return (

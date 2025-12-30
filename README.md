@@ -7,6 +7,7 @@ A comprehensive project management application designed to help teams organize p
 *   **Project Management**: Create and manage multiple projects.
 *   **Task Tracking**: Organize work with tasks and subtasks.
 *   **Notes System**: Create and share notes within projects.
+*   **Project File Management**: Upload, view, and delete project files.
 *   **User Roles**: Granular permissions (Admin, Project Admin, Member).
 *   **Secure Authentication**: JWT-based auth with secure cookies.
 *   **Responsive Detailed UI**: Built with Tailwind CSS and Shadcn UI.

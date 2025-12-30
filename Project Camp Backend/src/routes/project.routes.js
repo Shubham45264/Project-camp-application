@@ -25,6 +25,12 @@ import {
 } from "../middlewares/auth.middleware.js";
 
 import { UserRolesEnum } from "../utils/constants.js";
+import {
+  uploadFile,
+  getProjectFiles,
+  deleteFile
+} from "../controllers/projectFile.controllers.js";
+import { uploadProjectFile } from "../middlewares/fileUpload.middleware.js";
 
 const router = Router();
 
@@ -56,6 +62,8 @@ router
     deleteProject
   );
 
+
+
 // ---------------- PROJECT MEMBERS ----------------
 router
   .route("/:projectId/members")
@@ -76,6 +84,26 @@ router
   .delete(
     validateProjectPermission([UserRolesEnum.ADMIN]),
     deleteMember
+  );
+
+// ---------------- PROJECT FILES ----------------
+router
+  .route("/:projectId/files")
+  .get(
+    validateProjectPermission([]), // All members can view files
+    getProjectFiles
+  )
+  .post(
+    validateProjectPermission([]), // All members can upload files
+    uploadProjectFile.single("file"),
+    uploadFile
+  );
+
+router
+  .route("/:projectId/files/:fileId")
+  .delete(
+    validateProjectPermission([]), // Permission check happening inside controller
+    deleteFile
   );
 
 export default router;

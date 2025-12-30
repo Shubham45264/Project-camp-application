@@ -31,12 +31,18 @@ const Login = () => {
       setIsLoading(true);
 
       // 🔐 Backend sets HTTP-only cookie here
-      await api.post("/auth/login", {
+      const response = await api.post("/auth/login", {
         email: formData.email,
         password: formData.password,
       });
 
-      toast.success("Logged in successfully!");
+      const user = response.data.data.user;
+      localStorage.setItem("user", JSON.stringify(user));
+
+      toast.success(`Welcome back, ${user.fullName || user.username}!`, {
+        description: "Ready to manage your projects?",
+        duration: 4000,
+      });
       navigate("/dashboard");
     } catch (error: any) {
       toast.error(

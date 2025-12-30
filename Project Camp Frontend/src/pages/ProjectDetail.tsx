@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { Plus, Upload, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
@@ -12,16 +12,17 @@ import {
   deleteTask,
   updateTaskStatus,
 } from "@/services/task.api";
-
+import { getProjectFiles, uploadFile, deleteFile } from "@/services/file.api";
 
 import TaskList from "@/components/tasks/TaskList";
 import AddTaskModal from "@/components/tasks/AddTaskModal";
 import { NoteList } from "@/components/notes/NoteList";
+import UploadFileModal from "@/components/files/UploadFileModal";
+import FileList from "@/components/files/FileList";
 
 import { TaskDetailModal } from "@/components/tasks/TaskDetailModal";
 import { RoleGuard } from "@/components/common/RoleGuard";
 import { AddMemberModal } from "@/components/projects/AddMemberModal";
-import { UserPlus } from "lucide-react";
 
 /* ---------------- TYPES ---------------- */
 interface Task {
@@ -48,6 +49,10 @@ const ProjectDetail = () => {
   const [activeTab, setActiveTab] = useState("tasks");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [files, setFiles] = useState<any[]>([]);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
   const { toast } = useToast();
 
   /* -------- LOAD PROJECT + TASKS + ROLE -------- */
@@ -56,15 +61,17 @@ const ProjectDetail = () => {
 
     const load = async () => {
       try {
-        const [projectData, taskData, roleData] = await Promise.all([
+        const [projectData, taskData, roleData, fileData] = await Promise.all([
           getProjectById(projectId),
           getTasksByProject(projectId),
           getMyProjectRole(projectId),
+          getProjectFiles(projectId),
         ]);
 
         setProject(projectData);
         setTasks(taskData);
         setUserRole(roleData.role);
+        setFiles(fileData);
       } catch (e) {
         console.error("Failed to load project data", e);
       } finally {
@@ -90,7 +97,6 @@ const ProjectDetail = () => {
       alert(error.message || "Failed to create task");
     }
   };
-
 
   /* -------- DELETE TASK -------- */
   const handleDeleteTask = async (taskId: string) => {
@@ -127,6 +133,47 @@ const ProjectDetail = () => {
     }
   };
 
+  /* -------- UPLOAD FILE -------- */
+  const handleUploadFile = async (file: File) => {
+    if (!projectId) return;
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const newFile = await uploadFile(projectId, formData);
+      setFiles((prev) => [newFile, ...prev]);
+      setShowUploadModal(false);
+      toast({
+        title: "File Uploaded",
+        description: "File has been successfully uploaded.",
+      });
+    } catch (error: any) {
+      console.error(error);
+      alert(error.message || "Failed to upload file");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  /* -------- DELETE FILE -------- */
+  const handleDeleteFile = async (fileId: string) => {
+    if (!projectId) return;
+
+    if (!confirm("Are you sure you want to delete this file?")) return;
+
+    try {
+      await deleteFile(projectId, fileId);
+      setFiles((prev) => prev.filter((f) => f._id !== fileId));
+      toast({
+        title: "File Deleted",
+        description: "File has been successfully deleted.",
+      });
+    } catch (error: any) {
+      console.error(error);
+      alert(error.message || "Failed to delete file");
+    }
+  };
 
   /* -------- UI STATES -------- */
   if (loading) return <p className="p-6">Loading...</p>;
@@ -147,6 +194,13 @@ const ProjectDetail = () => {
         </div>
 
         <div className="flex gap-2">
+          {activeTab === "files" && (
+            <Button onClick={() => setShowUploadModal(true)}>
+              <Upload className="w-4 h-4 mr-2" />
+              Upload File
+            </Button>
+          )}
+
           <RoleGuard
             currentRole={userRole}
             allowedRoles={["admin", "project_admin"]}
@@ -174,6 +228,7 @@ const ProjectDetail = () => {
       <Tabs defaultValue="tasks" value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
+          <TabsTrigger value="files">Files</TabsTrigger>
           <TabsTrigger value="notes">Notes</TabsTrigger>
         </TabsList>
         <TabsContent value="tasks" className="mt-6">
@@ -187,6 +242,9 @@ const ProjectDetail = () => {
         </TabsContent>
         <TabsContent value="notes" className="mt-6">
           <NoteList />
+        </TabsContent>
+        <TabsContent value="files" className="mt-6">
+          <FileList files={files} onDelete={handleDeleteFile} />
         </TabsContent>
       </Tabs>
 
@@ -202,6 +260,14 @@ const ProjectDetail = () => {
         open={showInviteModal}
         onClose={() => setShowInviteModal(false)}
         onAdd={handleInvite}
+      />
+
+      {/* UPLOAD FILE MODAL */}
+      <UploadFileModal
+        open={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        onUpload={handleUploadFile}
+        isUploading={isUploading}
       />
 
       {/* TASK DETAIL MODAL */}
